@@ -9,5 +9,12 @@ public class Main {
         IO.println(transactions.size());
 
         transactions.stream().limit(10).forEach(IO::println);
+
+        IO.println("--------------------------------------------------");
+
+        List<Transaction> transactionBadData = transactionIngestor.read("data/doc.csv");
+        IO.println(transactionBadData.size());
+
+        transactionBadData.forEach(IO::println);
     }
 }

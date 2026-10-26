@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 public class TransactionIngestor {
 
@@ -18,18 +20,22 @@ public class TransactionIngestor {
                     .skip(1)
                     .limit(1000)
                     .map(this::parseTransaction)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
                     .toList();
         } catch (Exception ex) {
             throw new RuntimeException("Erro ao ler o arquivo:" + filename + ex);
         }
     }
 
-    private Transaction parseTransaction(String line) {
+    private Optional<Transaction> parseTransaction(String line) {
+        try {
         String[] chunks = line.split(",");
 
         int step = Integer.parseInt(chunks[0]);
         TransactionTypeEnum type = TransactionTypeEnum.valueOf(chunks[1]);
 
+        if (chunks[2] == null || chunks[2].trim().isEmpty()) throw new IllegalStateException("O valor de AMOUNT não pode ser nulo nem vazio.");
         BigDecimal amount = new BigDecimal(chunks[2]);
 
         var origin = new TransactionCustomer(chunks[3], new BigDecimal(chunks[4]), new BigDecimal(chunks[5]));
@@ -39,6 +45,12 @@ public class TransactionIngestor {
 
         boolean isFlaggedFraud = "1".equals(chunks[10]);
 
-        return new Transaction(step, type, amount, origin, recipient, isFraud, isFlaggedFraud);
+        return Optional.of(new Transaction(step, type, amount, origin, recipient, isFraud, isFlaggedFraud));
+        } catch (Exception e) {
+            System.err.println("Erro ao fazer parse:" + line + " | " + e);
+            e.printStackTrace();
+
+            return Optional.empty();
+        }
     }
 }
